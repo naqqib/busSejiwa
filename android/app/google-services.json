@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "964034664924",
+    "project_id": "bussejiwa",
+    "storage_bucket": "bussejiwa.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:964034664924:android:f4b2af69a653b1940d1719",
+        "android_client_info": {
+          "package_name": "com.group20.bussejiwa"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCSZtZWRjWTK8__SFHTtiokGqbkXI9P3O0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

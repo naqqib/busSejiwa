@@ -1,0 +1,32 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "bussejiwa",
+          "appId": "1:964034664924:android:f4b2af69a653b1940d1719",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "bussejiwa",
+          "configurations": {
+            "android": "1:964034664924:android:f4b2af69a653b1940d1719",
+            "web": "1:964034664924:web:66caa1fe765ac10f0d1719"
+          }
+        }
+      }
+    }
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "emulators": {
+    "auth": { "port": 9099 },
+    "firestore": { "port": 8080 },
+    "ui": { "enabled": true },
+    "singleProjectMode": true
+  }
+}
