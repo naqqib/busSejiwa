@@ -21,15 +21,19 @@ service cloud.firestore {
     match /buses/{id}     { allow read: if signedIn(); allow write: if isAdmin(); }
     match /operators/{id} { allow read: if signedIn(); allow write: if isAdmin(); }
 
-    // Trips: a passenger logs their own trips; operators/admins can review them
+    // Trips: a passenger creates and updates only their own trips.
+    // Any logged-in user can read trips, because the rating is calculated
+    // inside the app from a bus's trip history (proposal section 5.2).
     match /trips/{id} {
       allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
-      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isOperator());
+      allow update: if signedIn() && resource.data.userId == request.auth.uid
+                    && request.resource.data.userId == resource.data.userId;
+      allow read: if signedIn();
     }
 
-    // Violations: logged by the app, readable for ratings, lookup and the dashboard
+    // Violations: logged by the passenger's app for their own trip
     match /violations/{id} {
-      allow create: if signedIn();
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
       allow read: if signedIn();
     }
 
