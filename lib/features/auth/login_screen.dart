@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/services/auth_service.dart';
+import 'register_screen.dart';
 
 /// Login screen for passengers, operators and admins.
 ///
@@ -127,7 +128,20 @@ class _LoginScreenState extends State<LoginScreen> {
                       : const Text('Login'),
                 ),
               ),
-              // (Register link comes in step 1d)
+              TextButton(
+                // Prevent navigation while a login request is running.
+                onPressed: _loading
+                    ? null
+                    : () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const RegisterScreen(),
+                          ),
+                        );
+                      },
+                child: const Text('No account? Register'),
+              ),
             ],
           ),
         ),
