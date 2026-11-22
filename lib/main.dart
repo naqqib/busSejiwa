@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'features/auth/auth_gate.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,9 +19,8 @@ class BusSejiwaApp extends StatelessWidget {
     return const MaterialApp(
       title: 'BusSejiwa',
       debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        body: Center(child: Text('BusSejiwa - Firebase connected')),
-      ),
+      home: AuthGate(),
     );
+    
   }
 }
