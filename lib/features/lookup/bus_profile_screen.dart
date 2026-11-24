@@ -31,6 +31,8 @@ class BusProfileScreen extends StatelessWidget {
           ListTile(title: const Text('Model'), subtitle: Text(bus.model)),
           const SizedBox(height: 16),
           _buildRatingSection(bus.id),
+          const SizedBox(height: 16),
+          _buildViolationsSection(bus.id),
         ],
       ),
     );
@@ -85,4 +87,52 @@ class BusProfileScreen extends StatelessWidget {
       },
     );
   }
+
+  Widget _buildViolationsSection(String busId) {
+    return FutureBuilder<List<Violation>>( 
+      future: FirestoreService().getViolationsForBus(busId, limit: 5),
+      builder: (context, snapshot) {
+        // State 1: Loading
+        if (snapshot.connectionState == ConnectionState.waiting) { // TODO 3: Waiting state
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        // State 2: Error
+        if (snapshot.hasError) { // TODO 4: Check if snapshot has an error
+          return Text('Failed to load violations: ${snapshot.error}');
+        }
+
+        // State 3: Empty list
+        final violations = snapshot.data ?? [];
+        if (violations.isEmpty) { // TODO 5: Check if violations list is empty
+          return const Text('No recent violations recorded');
+        }
+
+        // State 4: Show the list
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Recent Violations',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            ...violations.map(
+              (v) => ListTile(
+                // TODO 6: Show recorded speed and speed limit (e.g. "112 km/h (limit 90 km/h)")
+                title: Text(
+                  '${v.speedKmh.toStringAsFixed(0)} km/h (limit ${v.limitKmh.toStringAsFixed(0)} km/h)',
+                ),
+                // TODO 7: Show roadName (fallback to 'Unknown road' if null) and severity name
+                subtitle: Text(
+                  '${v.roadName ?? 'Unknown road'} • ${v.severity.name}',
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
 }
