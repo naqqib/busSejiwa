@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'onboarding_demos.dart';
+
 /// 3-slide "Get Started" tutorial shown right after a new user registers.
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -14,17 +16,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   static const _slides = [
     _OnboardingSlide(
-      icon: Icons.qr_code_scanner_rounded,
+      demo: const QrScanDemo(),
       title: 'Instant Plate & QR Lookup',
       description: 'Type any Malaysian bus plate number or scan the bus QR code to inspect operator details before you board.',
     ),
     _OnboardingSlide(
-      icon: Icons.verified_user_rounded,
+      demo: const LiveRatingDemo(),
       title: 'Live Safety Ratings',
       description: 'Check real-time bus safety scores updated continuously from verified records and passenger reports.',
     ),
     _OnboardingSlide(
-      icon: Icons.speed_rounded,
+      demo: const SpeedAlertDemo(),
       title: 'Speed & Violation Alerts',
       description: 'Stay aware of recent safety violations and speed alerts so every journey across Malaysia is safer.',
     ),
@@ -80,7 +82,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Image.asset(
-                      'assets/images/logo_full.png',
+                      'assets/images/logo.png',
                       width: 36,
                       height: 36,
                       fit: BoxFit.contain,
@@ -116,33 +118,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          // Glowing icon badge
-                          Container(
-                            width: 112,
-                            height: 112,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withValues(alpha: 0.12),
-                              border: Border.all(
-                                color: const Color(0xFF6EE7B7)
-                                    .withValues(alpha: 0.45),
-                                width: 1.5,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFF10B981)
-                                      .withValues(alpha: 0.30),
-                                  blurRadius: 28,
-                                  spreadRadius: 2,
-                                ),
-                              ],
-                            ),
-                            child: Icon(
-                              slide.icon,
-                              size: 52,
-                              color: const Color(0xFF6EE7B7),
-                            ),
-                          ),
+                          // Animated micro-demo (QrScanDemo / LiveRatingDemo / SpeedAlertDemo)
+                          slide.demo,
                           const SizedBox(height: 36),
                           Text(
                             slide.title,
@@ -224,12 +201,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 }
 
 class _OnboardingSlide {
-  final IconData icon;
+  final Widget demo;
   final String title;
   final String description;
 
   const _OnboardingSlide({
-    required this.icon,
+    required this.demo,
     required this.title,
     required this.description,
   });

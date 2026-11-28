@@ -6,6 +6,8 @@ import '../../core/services/firestore_service.dart';
 import '../lookup/bus_profile_screen.dart';
 import '../lookup/plate_lookup_screen.dart';
 import '../lookup/qr_scan_screen.dart';
+import '../../core/models/models.dart';
+import '../auth/onboarding_screen.dart';
 
 import 'package:flutter/foundation.dart' show kDebugMode;
 
@@ -412,33 +414,72 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const Spacer(),
 
-          if (kDebugMode) ...[
-            FilledButton.icon(
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF1F6E5C),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: const StadiumBorder(),
-              ),
-              onPressed: () async {
-                await SeedDataService().seedDemoData();
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Seeded 3 demo buses (WXY 1234, PNQ 5678, JDT 9012)!',
+          // Replay App Tutorial (visible to all users)
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF1F6E5C),
+              side: const BorderSide(color: Color(0xFF1F6E5C)),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: const StadiumBorder(),
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+              );
+            },
+            icon: const Icon(Icons.play_circle_outline_rounded),
+            label: const Text(
+              'Replay App Tutorial',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Seed Demo Buses (Dev) — ONLY visible to admin accounts in debug mode
+          if (kDebugMode && user != null)
+            FutureBuilder<AppUser?>(
+              future: _firestore.getUser(user.uid),
+              builder: (context, snapshot) {
+                final isAdmin = snapshot.data?.role.name == 'admin';
+                if (!isAdmin) return const SizedBox.shrink();
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF1F6E5C),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: const StadiumBorder(),
+                    ),
+                    onPressed: () async {
+                      try {
+                        await SeedDataService().seedDemoData();
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Seeded 3 demo buses (WXY 1234, PNQ 5678, JDT 9012)!',
+                            ),
+                          ),
+                        );
+                      } catch (e) {
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Seed failed: $e')),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.dataset_rounded),
+                    label: const Text(
+                      'Seed Demo Buses (Dev)',
+                      style: TextStyle(fontWeight: FontWeight.w700),
                     ),
                   ),
                 );
               },
-              icon: const Icon(Icons.dataset_rounded),
-              label: const Text(
-                'Seed Demo Buses (Dev)',
-                style: TextStyle(fontWeight: FontWeight.w700),
-              ),
             ),
-            const SizedBox(height: 12),
-          ],
 
           OutlinedButton.icon(
             style: OutlinedButton.styleFrom(
