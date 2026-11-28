@@ -4,6 +4,9 @@ import '../../core/services/firestore_service.dart';
 import 'bus_profile_screen.dart';
 import 'bus_search_overlay.dart';
 import 'qr_scan_screen.dart';
+import '../../core/utils/app_transitions.dart';
+
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PlateLookupScreen extends StatefulWidget {
   const PlateLookupScreen({super.key});
@@ -19,6 +22,44 @@ class _PlateLookupScreenState extends State<PlateLookupScreen> {
   bool _loading = false;
   String? _error;
 
+  static const _historyKey = 'recent_bus_plates';
+  List<String> _recentPlates = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRecentPlates();
+  }
+
+  Future<void> _loadRecentPlates() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getStringList(_historyKey) ?? [];
+    if (mounted) {
+      setState(() => _recentPlates = saved);
+    }
+  }
+
+  Future<void> _recordRecentPlate(String plate) async {
+    final formatted = plate.trim().toUpperCase();
+    if (formatted.isEmpty) return;
+
+    final updated = List<String>.from(_recentPlates)
+      ..remove(formatted)
+      ..insert(0, formatted);
+    if (updated.length > 5) updated.removeLast();
+
+    if (mounted) setState(() => _recentPlates = updated);
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_historyKey, updated);
+  }
+
+  Future<void> _clearRecentPlates() async {
+    setState(() => _recentPlates = []);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_historyKey);
+  }
+
   @override
   void dispose() {
     _plateController.dispose();
@@ -28,7 +69,9 @@ class _PlateLookupScreenState extends State<PlateLookupScreen> {
   Future<void> _searchPlate() async {
     final raw = _plateController.text.trim();
     if (raw.isEmpty) {
-      setState(() => _error = 'Please enter a bus plate number (e.g. WXY 1234).');
+      setState(
+        () => _error = 'Please enter a bus plate number (e.g. WXY 1234).',
+      );
       return;
     }
 
@@ -48,6 +91,8 @@ class _PlateLookupScreenState extends State<PlateLookupScreen> {
         setState(() => _error = 'No bus found with plate "$raw".');
         return;
       }
+      await _recordRecentPlate(bus.plateNumber);
+      if (!mounted) return;
 
       Navigator.push(
         context,
@@ -85,6 +130,9 @@ class _PlateLookupScreenState extends State<PlateLookupScreen> {
         return;
       }
 
+      await _recordRecentPlate(bus.plateNumber);
+      if (!mounted) return;
+
       Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => BusProfileScreen(bus: bus)),
@@ -112,10 +160,7 @@ class _PlateLookupScreenState extends State<PlateLookupScreen> {
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [
-                      Color(0xFF1F6E5C),
-                      Color(0xFF0B2E26),
-                    ],
+                    colors: [Color(0xFF1F6E5C), Color(0xFF0B2E26)],
                   ),
                   borderRadius: BorderRadius.vertical(
                     bottom: Radius.circular(28),
@@ -129,7 +174,10 @@ class _PlateLookupScreenState extends State<PlateLookupScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.arrow_back, color: Colors.white),
+                          icon: const Icon(
+                            Icons.arrow_back,
+                            color: Colors.white,
+                          ),
                           onPressed: () => Navigator.pop(context),
                         ),
                         const Padding(
@@ -177,7 +225,8 @@ class _PlateLookupScreenState extends State<PlateLookupScreen> {
                           borderRadius: BorderRadius.circular(24),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF0B2E26).withValues(alpha: 0.07),
+                              color: const Color(0xFF0B2E26)
+                                  .withValues(alpha: 0.07),
                               blurRadius: 16,
                               offset: const Offset(0, 6),
                             ),
@@ -221,7 +270,9 @@ class _PlateLookupScreenState extends State<PlateLookupScreen> {
                               style: FilledButton.styleFrom(
                                 backgroundColor: const Color(0xFF0B2E26),
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 15),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 15,
+                                ),
                                 shape: const StadiumBorder(),
                               ),
                               onPressed: _loading ? null : _searchPlate,
@@ -253,7 +304,9 @@ class _PlateLookupScreenState extends State<PlateLookupScreen> {
                                   color: Color(0xFF1F6E5C),
                                   width: 1.4,
                                 ),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                                 shape: const StadiumBorder(),
                               ),
                               onPressed: _loading ? null : _scanQr,
@@ -282,7 +335,10 @@ class _PlateLookupScreenState extends State<PlateLookupScreen> {
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.error_outline, color: Colors.red.shade700),
+                              Icon(
+                                Icons.error_outline,
+                                color: Colors.red.shade700,
+                              ),
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
@@ -298,6 +354,99 @@ class _PlateLookupScreenState extends State<PlateLookupScreen> {
                           ),
                         ),
                       ],
+
+                      // Recent Search History Chips
+                      if (_recentPlates.isNotEmpty) ...[
+                        const SizedBox(height: 22),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Recent Searches',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF0B2E26),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: _clearRecentPlates,
+                              style: TextButton.styleFrom(
+                                foregroundColor: const Color(0xFF1F6E5C),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              child: const Text(
+                                'Clear',
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: _recentPlates.map((plate) {
+                            return TactileTap(
+                              onTap: () {
+                                _plateController.text = plate;
+                                _searchPlate();
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(99),
+                                  border: Border.all(
+                                    color: const Color(0xFF1F6E5C)
+                                        .withValues(alpha: 0.25),
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFF0B2E26)
+                                          .withValues(alpha: 0.04),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.history_rounded,
+                                      size: 15,
+                                      color: Color(0xFF1F6E5C),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      plate,
+                                      style: const TextStyle(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: 0.8,
+                                        color: Color(0xFF0B2E26),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+
+
 
                       const SizedBox(height: 20),
 

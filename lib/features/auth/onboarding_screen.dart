@@ -82,7 +82,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Image.asset(
-                      'assets/images/logo.png',
+                      'assets/images/logo_full.png',
                       width: 36,
                       height: 36,
                       fit: BoxFit.contain,
