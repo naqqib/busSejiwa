@@ -7,6 +7,10 @@ import '../lookup/bus_profile_screen.dart';
 import '../lookup/plate_lookup_screen.dart';
 import '../lookup/qr_scan_screen.dart';
 
+import 'package:flutter/foundation.dart' show kDebugMode;
+
+import '../../core/services/seed_data_service.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -46,9 +50,9 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
 
     if (bus == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No bus found for QR "$busId".')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('No bus found for QR "$busId".')));
       return;
     }
 
@@ -66,9 +70,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showComingSoon(String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$feature module coming soon!')),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('$feature module coming soon!')));
   }
 
   @override
@@ -156,10 +159,7 @@ class _HomeScreenState extends State<HomeScreen> {
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF1F6E5C),
-                  Color(0xFF0B2E26),
-                ],
+                colors: [Color(0xFF1F6E5C), Color(0xFF0B2E26)],
               ),
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
@@ -249,7 +249,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       onPressed: _openQrScanner,
-                      child: const Icon(Icons.qr_code_scanner_rounded, size: 22),
+                      child: const Icon(
+                        Icons.qr_code_scanner_rounded,
+                        size: 22,
+                      ),
                     ),
                   ],
                 ),
@@ -408,6 +411,35 @@ class _HomeScreenState extends State<HomeScreen> {
             style: TextStyle(color: Colors.grey.shade600),
           ),
           const Spacer(),
+
+          if (kDebugMode) ...[
+            FilledButton.icon(
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF1F6E5C),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: const StadiumBorder(),
+              ),
+              onPressed: () async {
+                await SeedDataService().seedDemoData();
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Seeded 3 demo buses (WXY 1234, PNQ 5678, JDT 9012)!',
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.dataset_rounded),
+              label: const Text(
+                'Seed Demo Buses (Dev)',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+
           OutlinedButton.icon(
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.redAccent,

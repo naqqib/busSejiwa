@@ -35,14 +35,9 @@ class BusProfileScreen extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF1F6E5C),
-                  Color(0xFF0B2E26),
-                ],
+                colors: [Color(0xFF1F6E5C), Color(0xFF0B2E26)],
               ),
-              borderRadius: BorderRadius.vertical(
-                bottom: Radius.circular(28),
-              ),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
             ),
             child: SafeArea(
               bottom: false,
@@ -313,7 +308,11 @@ class BusProfileScreen extends StatelessWidget {
               const SizedBox(height: 10),
               Row(
                 children: [
-                  Icon(Icons.speed_rounded, size: 16, color: Colors.grey.shade600),
+                  Icon(
+                    Icons.speed_rounded,
+                    size: 16,
+                    color: Colors.grey.shade600,
+                  ),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
@@ -373,10 +372,7 @@ class BusProfileScreen extends StatelessWidget {
               _statusCard(
                 child: const Row(
                   children: [
-                    Icon(
-                      Icons.check_circle_rounded,
-                      color: Color(0xFF10B981),
-                    ),
+                    Icon(Icons.check_circle_rounded, color: Color(0xFF10B981)),
                     SizedBox(width: 12),
                     Expanded(
                       child: Text(
@@ -494,8 +490,8 @@ class _InfoRow extends StatelessWidget {
           label,
           style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
         ),
-        const Spacer(),
-        Flexible(
+        const SizedBox(width: 16),
+        Expanded(
           child: Text(
             value,
             textAlign: TextAlign.end,
