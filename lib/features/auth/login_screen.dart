@@ -46,6 +46,9 @@ class _LoginScreenState extends State<LoginScreen> {
         _emailController.text,
         _passwordController.text,
       );
+
+      if (!mounted) return; // Screen may have closed during the await.
+      Navigator.of(context).popUntil((route) => route.isFirst); // Go back to the first screen (AuthGate)
     } on FirebaseAuthException catch (e) {
       // Convert Firebase error codes into user-friendly messages.
       // 'invalid-credential' is deliberately vague (doesn't say whether the
