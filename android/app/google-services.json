@@ -12,7 +12,20 @@
           "package_name": "com.group20.bussejiwa"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "964034664924-f61ecvbiln51o9h15h5j38p5c8g1omlv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.group20.bussejiwa",
+            "certificate_hash": "1f0bc446aef73286c673903012d70cc43186f538"
+          }
+        },
+        {
+          "client_id": "964034664924-l3r6s763pen68h0m56n2m0h8fghmid7h.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCSZtZWRjWTK8__SFHTtiokGqbkXI9P3O0"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "964034664924-l3r6s763pen68h0m56n2m0h8fghmid7h.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

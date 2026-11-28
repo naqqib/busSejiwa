@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/services/auth_service.dart';
+import 'login_screen.dart';
+import 'onboarding_screen.dart';
+import 'google_g_logo.dart';
+
 
 /// Registration screen for new passenger accounts.
-///
-/// AuthService creates the Firebase account and Firestore passenger profile.
-/// Registration also signs the user in, so AuthGate displays HomeScreen
-/// underneath this pushed route. This screen then closes itself on success.
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -14,55 +14,75 @@ class RegisterScreen extends StatefulWidget {
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
-  // Connects to the Form so _submit() can validate every field at once.
+class _RegisterScreenState extends State<RegisterScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-
-  // Controllers let us read the text entered into each field.
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-
-  // Keep one service instance for this screen's state across rebuilds.
+  final _confirmPasswordController = TextEditingController();
   final _auth = AuthService();
 
-  final _nameController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
-
-  // Disables Register and shows a spinner while registration is running.
   bool _loading = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirm = true;
+
+  // Smooth card slide-up & header fade animation (matches LoginScreen)
+  late final AnimationController _animController;
+  late final Animation<double> _headerFade;
+  late final Animation<Offset> _cardSlide;
+
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 650),
+    );
+
+    _headerFade = CurvedAnimation(
+      parent: _animController,
+      curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+    );
+
+    _cardSlide = Tween<Offset>(begin: const Offset(0, 0.25), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _animController,
+            curve: const Interval(0.15, 1.0, curve: Curves.easeOutCubic),
+          ),
+        );
+    _animController.forward();
+  }
 
   @override
   void dispose() {
-    // Release all controllers when Flutter removes this screen.
+    _animController.dispose();
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
-    _nameController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
-    // Stop here if any field is invalid, before sending a Firebase request.
     if (!_formKey.currentState!.validate()) return;
 
-    // Rebuild the button to show that registration is in progress.
     setState(() => _loading = true);
-
     try {
-      // Pass the entered values to our shared registration service.
       await _auth.register(
         name: _nameController.text,
         email: _emailController.text,
         password: _passwordController.text,
       );
 
-      // Stop if this widget was removed while we were waiting.
       if (!mounted) return;
-
-      // Close this pushed route to reveal the screen managed by AuthGate.
-      Navigator.pop(context);
+      // In Step 3, we'll push OnboardingScreen here instead!
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+      );
     } on FirebaseAuthException catch (e) {
-      // Turn Firebase Authentication error codes into readable messages.
       String message;
       switch (e.code) {
         case 'email-already-in-use':
@@ -72,106 +92,366 @@ class _RegisterScreenState extends State<RegisterScreen> {
         case 'invalid-email':
           message = 'That email address is not valid.';
         case 'too-many-requests':
-          // Firebase may temporarily block repeated requests.
           message = 'Too many attempts. Please try again later.';
         default:
           message = e.message ?? 'Registration failed. Please try again.';
       }
 
-      // Only use context to show the message if this widget still exists.
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
     } finally {
-      // Runs after success or failure; only rebuild if still mounted.
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  Future<void> _onGoogleSignIn() async {
+    setState(() => _loading = true);
+    try {
+      final isNewUser = await _auth.signInWithGoogle();
+      if (!mounted) return;
+
+      if (isNewUser) {
+        // First-time Google user -> show Get Started tutorial
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+        );
+      } else {
+        // Returning user -> go straight to HomeScreen
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message ?? 'Google Sign-In failed.')),
+      );
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  InputDecoration _fieldDecoration({
+    required String hint,
+    required IconData icon,
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      hintText: hint,
+      prefixIcon: Icon(icon, color: Colors.grey.shade600, size: 20),
+      suffixIcon: suffixIcon,
+      filled: true,
+      fillColor: const Color(0xFFF3F4F6),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide.none,
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Colors.redAccent),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Account')),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        // The key gives _submit() access to this Form's validation state.
-        child: Form(
-          key: _formKey,
+      backgroundColor: const Color(0xFF0B2E26),
+      body: Container(
+        width: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF1F6E5C), Color(0xFF0B2E26)],
+            stops: [0.0, 0.45],
+          ),
+        ),
+        child: SafeArea(
+          bottom: false,
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Collect the name that will be saved in the user profile.
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Full Name'),
-                validator: (value) {
-                  // trim() makes a name containing only spaces invalid.
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter your name.';
-                  }
-                  return null; // No error message means the field is valid.
-                },
-              ),
-              TextFormField(
-                controller: _emailController,
-                decoration: const InputDecoration(labelText: 'Email'),
-                keyboardType: TextInputType.emailAddress,
-                // This is a basic check; Firebase also validates the address.
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter your email.';
-                  }
-                  if (!value.contains('@')) {
-                    return 'Please enter a valid email.';
-                  }
-                  return null;
-                },
-              ),
-
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _passwordController,
-                decoration: const InputDecoration(labelText: 'Password'),
-                // Hide the password as the user types.
-                obscureText: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your password.';
-                  }
-                  // Check the registration form's minimum password length.
-                  if (value.length < 6) {
-                    return 'Password must be at least 6 characters long.';
-                  }
-                  return null;
-                },
-              ),
-
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _confirmPasswordController,
-                decoration: const InputDecoration(
-                  labelText: 'Confirm Password',
+              // Back button
+              Align(
+                alignment: Alignment.centerLeft,
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
                 ),
-                obscureText: true,
-                validator: (value) {
-                  // Compare the entered text with the original password.
-                  if (value != _passwordController.text) {
-                    return 'Passwords do not match.';
-                  }
-                  return null;
-                },
               ),
 
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  // A null callback disables the button to prevent resubmitting.
-                  onPressed: _loading ? null : _submit,
-                  child: _loading
-                      ? const CircularProgressIndicator()
-                      : const Text('Register'),
+              // Dark Emerald Header (Logo + "Create account.")
+              FadeTransition(
+                opacity: _headerFade,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 4, 24, 20),
+                  child: Column(
+                    children: [
+                      Image.asset(
+                        'assets/images/logo.png',
+                        width: 52,
+                        height: 52,
+                        fit: BoxFit.contain,
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'Create account.',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Join BusSejiwa for safer bus journeys across Malaysia.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 13, color: Colors.white70),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // White Rounded Bottom Sheet Card (slides up smoothly)
+              Expanded(
+                child: SlideTransition(
+                  position: _cardSlide,
+                  child: Container(
+                    width: double.infinity,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(32),
+                      ),
+                    ),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Full Name field
+                            TextFormField(
+                              controller: _nameController,
+                              textCapitalization: TextCapitalization.words,
+                              decoration: _fieldDecoration(
+                                hint: 'Full name',
+                                icon: Icons.person_outline_rounded,
+                              ),
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Please enter your name.';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 12),
+
+                            // Email field
+                            TextFormField(
+                              controller: _emailController,
+                              keyboardType: TextInputType.emailAddress,
+                              decoration: _fieldDecoration(
+                                hint: 'Email address',
+                                icon: Icons.mail_outline_rounded,
+                              ),
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Please enter your email.';
+                                }
+                                if (!value.contains('@')) {
+                                  return 'Please enter a valid email.';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 12),
+
+                            // Password field with eye toggle
+                            TextFormField(
+                              controller: _passwordController,
+                              obscureText: _obscurePassword,
+                              decoration: _fieldDecoration(
+                                hint: 'Password',
+                                icon: Icons.lock_outline_rounded,
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscurePassword
+                                        ? Icons.visibility_off_outlined
+                                        : Icons.visibility_outlined,
+                                    color: Colors.grey.shade600,
+                                    size: 20,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _obscurePassword = !_obscurePassword;
+                                    });
+                                  },
+                                ),
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Please enter your password.';
+                                }
+                                if (value.length < 6) {
+                                  return 'Password must be at least 6 characters.';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 12),
+
+                            // Confirm Password field with eye toggle
+                            TextFormField(
+                              controller: _confirmPasswordController,
+                              obscureText: _obscureConfirm,
+                              decoration: _fieldDecoration(
+                                hint: 'Confirm password',
+                                icon: Icons.lock_reset_rounded,
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscureConfirm
+                                        ? Icons.visibility_off_outlined
+                                        : Icons.visibility_outlined,
+                                    color: Colors.grey.shade600,
+                                    size: 20,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _obscureConfirm = !_obscureConfirm;
+                                    });
+                                  },
+                                ),
+                              ),
+                              validator: (value) {
+                                if (value != _passwordController.text) {
+                                  return 'Passwords do not match.';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 22),
+
+                            // Primary Emerald Pill Button
+                            FilledButton(
+                              style: FilledButton.styleFrom(
+                                backgroundColor: const Color(0xFF0B2E26),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                shape: const StadiumBorder(),
+                              ),
+                              onPressed: _loading ? null : _submit,
+                              child: _loading
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Create account',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                            ),
+                            const SizedBox(height: 18),
+
+                            // Divider
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Divider(color: Colors.grey.shade300),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                  ),
+                                  child: Text(
+                                    'OR CONTINUE WITH',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.grey.shade500,
+                                      letterSpacing: 0.6,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Divider(color: Colors.grey.shade300),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+
+                            // Google Sign-In Button
+                            OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.black87,
+                                side: BorderSide(color: Colors.grey.shade300),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                              onPressed: _loading ? null : _onGoogleSignIn,
+                              icon: const GoogleGLogo(size: 20),
+                              label: const Text(
+                                'Continue with Google',
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+
+                            // Switch to Login
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Already have an account? ',
+                                  style: TextStyle(color: Colors.grey.shade600),
+                                ),
+                                GestureDetector(
+                                  onTap: _loading
+                                      ? null
+                                      : () {
+                                          Navigator.pushReplacement(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  const LoginScreen(),
+                                            ),
+                                          );
+                                        },
+                                  child: const Text(
+                                    'Sign in',
+                                    style: TextStyle(
+                                      color: Color(0xFF1F6E5C),
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ],
