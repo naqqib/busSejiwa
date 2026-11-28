@@ -193,7 +193,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                     );
                                   },
                                   child: Image.asset(
-                                    'assets/images/logo.png',
+                                    'assets/images/logo_full.png',
                                     fit: BoxFit.contain,
                                   ),
                                 ),

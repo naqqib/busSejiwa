@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../core/models/models.dart';
+import '../../core/utils/app_transitions.dart';
+
 import '../../core/services/firestore_service.dart';
 
 /// Displays the details, live safety rating, and recent violations of a bus.
@@ -118,11 +120,14 @@ class BusProfileScreen extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.all(20),
               children: [
-                _buildRatingSection(bus.id),
+                StaggeredEntrance(index: 0, child: _buildRatingSection(bus.id)),
                 const SizedBox(height: 18),
-                _buildDetailsCard(),
+                StaggeredEntrance(index: 1, child: _buildDetailsCard()),
                 const SizedBox(height: 22),
-                _buildViolationsSection(bus.id),
+                StaggeredEntrance(
+                  index: 2,
+                  child: _buildViolationsSection(bus.id),
+                ),
                 const SizedBox(height: 16),
               ],
             ),

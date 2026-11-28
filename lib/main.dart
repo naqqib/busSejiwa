@@ -1,7 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
+import 'package:flutter/material.dart';
+
+import 'core/utils/app_transitions.dart';
 import 'features/auth/auth_gate.dart';
+import 'firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,11 +18,23 @@ class BusSejiwaApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       title: 'BusSejiwa',
       debugShowCheckedModeBanner: false,
-      home: AuthGate(),
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF1F6E5C),
+          surface: const Color(0xFFF4FBF8),
+        ),
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.android: SmoothPageTransitionsBuilder(),
+            TargetPlatform.iOS: SmoothPageTransitionsBuilder(),
+          },
+        ),
+      ),
+      home: const AuthGate(),
     );
-    
   }
 }
